@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEURAL SYNC | Memory Matrix</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #0a0a0f;
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Animated Background */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes gridMove {
+            0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
+            100% { transform: perspective(500px) rotateX(60deg) translateY(50px); }
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: cyan;
+            border-radius: 50%;
+            animation: float 15s infinite;
+            opacity: 0.5;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 0.5; }
+            90% { opacity: 0.5; }
+            100% { transform: translateY(-100vh) scale(1); opacity: 0; }
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00ffff, #ff00ff, #00ffff);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease infinite;
+            text-shadow: 0 0 50px rgba(0, 255, 255, 0.5);
+            letter-spacing: 8px;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: rgba(0, 255, 255, 0.6);
+            letter-spacing: 15px;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+
+        /* Stats Display */
+        .stats {
+            display: flex;
+            gap: 50px;
+            margin-bottom: 40px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 15px 30px;
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, cyan, transparent);
+            animation: scanLine 2s linear infinite;
+        }
+
+        @keyframes scanLine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #00ffff;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+        }
+
+        /* Game Container */
+        .game-container {
+            position: relative;
+            z-index: 10;
+        }
+
+        .game-frame {
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 20px;
+            position: relative;
+        }
+
+        .game-frame::before,
+        .game-frame::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #00ffff;
+        }
+
+        .game-frame::before {
+            top: -5px;
+            left: -5px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .game-frame::after {
+            bottom: -5px;
+            right: -5px;
+            border-left: none;
+            border-top: none;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .tile {
+            width: 140px;
+            height: 140px;
+            border-radius: 15px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.15s ease;
+            overflow: hidden;
+        }
+
+        .tile::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 15px;
+            opacity: 0.3;
+            transition: opacity 0.15s ease;
+        }
+
+        .tile::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        /* Tile Colors */
+        .tile-0 {
+            background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3),
+                        inset 0 0 30px rgba(0, 255, 136, 0.2);
+            border: 2px solid rgba(0, 255, 136, 0.5);
+        }
+
+        .tile-1 {
+            background: linear-gradient(135deg, #ff4444 0%, #aa0000 100%);
+            box-shadow: 0 0 20px rgba(255, 68, 68, 0.3),
+                        inset 0 0 30px rgba(255, 68, 68, 0.2);
+            border: 2px solid rgba(255, 68, 68, 0.5);
+        }
+
+        .tile-2 {
+            background: linear-gradient(135deg, #ffdd00 0%, #aa9900 100%);
+            box-shadow: 0 0 20px rgba(255, 221, 0, 0.3),
+                        inset 0 0 30px rgba(255, 221, 0, 0.2);
+            border: 2px solid rgba(255, 221, 0, 0.5);
+        }
+
+        .tile-3 {
+            background: linear-gradient(135deg, #4488ff 0%, #0044aa 100%);
+            box-shadow: 0 0 20px rgba(68, 136, 255, 0.3),
+                        inset 0 0 30px rgba(68, 136, 255, 0.2);
+            border: 2px solid rgba(68, 136, 255, 0.5);
+        }
+
+        /* Tile Active States */
+        .tile.active,
+        .tile.flash {
+            transform: scale(1.05);
+            filter: brightness(1.8);
+        }
+
+        .tile-0.active, .tile-0.flash {
+            box-shadow: 0 0 60px rgba(0, 255, 136, 0.9),
+                        0 0 100px rgba(0, 255, 136, 0.5),
+                        inset 0 0 50px rgba(0, 255, 136, 0.5);
+        }
+
+        .tile-1.active, .tile-1.flash {
+            box-shadow: 0 0 60px rgba(255, 68, 68, 0.9),
+                        0 0 100px rgba(255, 68, 68, 0.5),
+                        inset 0 0 50px rgba(255, 68, 68, 0.5);
+        }
+
+        .tile-2.active, .tile-2.flash {
+            box-shadow: 0 0 60px rgba(255, 221, 0, 0.9),
+                        0 0 100px rgba(255, 221, 0, 0.5),
+                        inset 0 0 50px rgba(255, 221, 0, 0.5);
+        }
+
+        .tile-3.active, .tile-3.flash {
+            box-shadow: 0 0 60px rgba(68, 136, 255, 0.9),
+                        0 0 100px rgba(68, 136, 255, 0.5),
+                        inset 0 0 50px rgba(68, 136, 255, 0.5);
+        }
+
+        .tile.disabled {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .tile:hover:not(.disabled) {
+            transform: scale(1.02);
+            filter: brightness(1.2);
+        }
+
+        /* Status Message */
+        .status {
+            text-align: center;
+            margin-top: 30px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .status-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-text.error {
+            color: #ff4444;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+
+        /* Start Button */
+        .start-btn {
+            margin-top: 30px;
+            padding: 15px 50px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            color: #0a0a0f;
+            background: linear-gradient(135deg, #00ffff, #00aaaa);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            position: relative;
+            z-index: 10;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+        }
+
+        .start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.8);
+        }
+
+        .start-btn:active {
+            transform: scale(0.98);
+        }
+
+        .start-btn.hidden {
+            display: none;
+        }
+
+        /* Game Over Overlay */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s ease;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .overlay-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
+            color: #ff4444;
+            text-shadow: 0 0 50px rgba(255, 68, 68, 0.8);
+            animation: glitch 0.5s infinite;
+        }
+
+        @keyframes glitch {
+            0%, 100% { text-shadow: 0 0 50px rgba(255, 68, 68, 0.8); }
+            25% { text-shadow: -3px 0 #00ffff, 3px 0 #ff00ff; }
+            75% { text-shadow: 3px 0 #00ffff, -3px 0 #ff00ff; }
+        }
+
+        .overlay-score {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            color: white;
+            margin: 30px 0;
+        }
+
+        .overlay-score span {
+            color: #00ffff;
+            font-size: 2rem;
+        }
+
+        .high-score-msg {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: #ffdd00;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(255, 221, 0, 0.8);
+        }
+
+        /* Sequence Indicator */
+        .sequence-indicator {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            max-width: 320px;
+        }
+
+        .sequence-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(0, 255, 255, 0.2);
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .sequence-dot.completed {
+            background: #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+        }
+
+        .sequence-dot.current {
+            animation: dotPulse 0.5s ease infinite;
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .title {
+                font-size: 1.8rem;
+                letter-spacing: 4px;
+            }
+
+            .subtitle {
+                font-size: 0.7rem;
+                letter-spacing: 8px;
+            }
+
+            .stats {
+                gap: 20px;
+            }
+
+            .stat-box {
+                padding: 10px 20px;
+            }
+
+            .stat-value {
+                font-size: 1.8rem;
+            }
+
+            .tile {
+                width: 100px;
+                height: 100px;
+            }
+
+            .overlay-title {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="bg-grid"></div>
+    <div class="particles" id="particles"></div>
+
+    <!-- Header -->
+    <div class="header">
+        <h1 class="title">NEURAL SYNC</h1>
+        <p class="subtitle">Memory Matrix</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+        <div class="stat-box">
+            <div class="stat-label">Level</div>
+            <div class="stat-value" id="level">1</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">High Score</div>
+            <div class="stat-value" id="highScore">0</div>
+        </div>
+    </div>
+
+    <!-- Game Board -->
+    <div class="game-container">
+        <div class="game-frame">
+            <div class="game-board" id="gameBoard">
+                <div class="tile tile-0 disabled" data-index="0"></div>
+                <div class="tile tile-1 disabled" data-index="1"></div>
+                <div class="tile tile-2 disabled" data-index="2"></div>
+                <div class="tile tile-3 disabled" data-index="3"></div>
+            </div>
+        </div>
+        <div class="sequence-indicator" id="sequenceIndicator"></div>
+    </div>
+
+    <!-- Status -->
+    <div class="status">
+        <p class="status-text" id="statusText">Initialize Neural Link</p>
+    </div>
+
+    <!-- Start Button -->
+    <button class="start-btn" id="startBtn">Engage</button>
+
+    <!-- Game Over Overlay -->
+    <div class="overlay" id="overlay">
+        <h2 class="overlay-title">SYNC LOST</h2>
+        <p class="high-score-msg hidden" id="highScoreMsg">★ NEW HIGH SCORE ★</p>
+        <p class="overlay-score">You reached level <span id="finalScore">0</span></p>
+        <button class="start-btn" id="restartBtn">Reconnect</button>
+    </div>
+
+    <script>
+        // Game State
+        const state = {
+            sequence: [],
+            playerIndex: 0,
+            isPlaying: false,
+            isShowingSequence: false,
+            level: 1,
+            highScore: parseInt(localStorage.getItem('neuralSyncHighScore')) || 0
+        };
+
+        // DOM Elements
+        const tiles = document.querySelectorAll('.tile');
+        const levelDisplay = document.getElementById('level');
+        const highScoreDisplay = document.getElementById('highScore');
+        const statusText = document.getElementById('statusText');
+        const startBtn = document.getElementById('startBtn');
+        const overlay = document.getElementById('overlay');
+        const finalScore = document.getElementById('finalScore');
+        const restartBtn = document.getElementById('restartBtn');
+        const sequenceIndicator = document.getElementById('sequenceIndicator');
+        const highScoreMsg = document.getElementById('highScoreMsg');
+        const particlesContainer = document.getElementById('particles');
+
+        // Audio Context for sounds
+        let audioCtx = null;
+
+        // Frequencies for each tile (musical notes)
+        const frequencies = [329.63, 261.63, 392.00, 523.25]; // E4, C4, G4, C5
+
+        // Initialize
+        function init() {
+            highScoreDisplay.textContent = state.highScore;
+            createParticles();
+            setupEventListeners();
+        }
+
+        // Create floating particles
+        function createParticles() {
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (10 + Math.random() * 10) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Setup Event Listeners
+        function setupEventListeners() {
+            tiles.forEach(tile => {
+                tile.addEventListener('click', handleTileClick);
+            });
+            startBtn.addEventListener('click', startGame);
+            restartBtn.addEventListener('click', startGame);
+        }
+
+        // Initialize Audio Context
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Play tone
+        function playTone(index, duration = 200) {
+            if (!audioCtx) return;
+
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.type = 'sine';
+            oscillator.frequency.value = frequencies[index];
+
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration / 1000);
+
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + duration / 1000);
+        }
+
+        // Play error sound
+        function playErrorSound() {
+            if (!audioCtx) return;
+
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.value = 100;
+
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        }
+
+        // Start Game
+        function startGame() {
+            initAudio();
+
+            state.sequence = [];
+            state.playerIndex = 0;
+            state.level = 1;
+            state.isPlaying = true;
+
+            overlay.classList.remove('active');
+            startBtn.classList.add('hidden');
+            levelDisplay.textContent = state.level;
+            highScoreMsg.classList.add('hidden');
+
+            nextRound();
+        }
+
+        // Next Round
+        function nextRound() {
+            state.playerIndex = 0;
+            state.sequence.push(Math.floor(Math.random() * 4));
+
+            updateSequenceIndicator();
+            statusText.textContent = 'Observe the pattern';
+            statusText.classList.remove('error');
+
+            disableTiles();
+
+            setTimeout(() => {
+                showSequence();
+            }, 800);
+        }
+
+        // Update sequence indicator dots
+        function updateSequenceIndicator() {
+            sequenceIndicator.innerHTML = '';
+            for (let i = 0; i < state.sequence.length; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'sequence-dot';
+                sequenceIndicator.appendChild(dot);
+            }
+        }
+
+        // Update indicator progress
+        function updateIndicatorProgress() {
+            const dots = sequenceIndicator.querySelectorAll('.sequence-dot');
+            dots.forEach((dot, i) => {
+                dot.classList.remove('completed', 'current');
+                if (i < state.playerIndex) {
+                    dot.classList.add('completed');
+                } else if (i === state.playerIndex) {
+                    dot.classList.add('current');
+                }
+            });
+        }
+
+        // Show Sequence
+        async function showSequence() {
+            state.isShowingSequence = true;
+
+            for (let i = 0; i < state.sequence.length; i++) {
+                await flashTile(state.sequence[i]);
+                await sleep(200);
+            }
+
+            state.isShowingSequence = false;
+            enableTiles();
+            statusText.textContent = 'Replicate the pattern';
+            updateIndicatorProgress();
+        }
+
+        // Flash tile
+        function flashTile(index) {
+            return new Promise(resolve => {
+                const tile = tiles[index];
+                tile.classList.add('flash');
+                playTone(index, 300);
+
+                setTimeout(() => {
+                    tile.classList.remove('flash');
+                    resolve();
+                }, 400);
+            });
+        }
+
+        // Handle tile click
+        function handleTileClick(e) {
+            if (state.isShowingSequence || !state.isPlaying) return;
+
+            const clickedIndex = parseInt(e.target.dataset.index);
+
+            // Visual feedback
+            e.target.classList.add('active');
+            playTone(clickedIndex, 200);
+
+            setTimeout(() => {
+                e.target.classList.remove('active');
+            }, 200);
+
+            // Check if correct
+            if (clickedIndex === state.sequence[state.playerIndex]) {
+                state.playerIndex++;
+                updateIndicatorProgress();
+
+                // Check if sequence complete
+                if (state.playerIndex === state.sequence.length) {
+                    state.level++;
+                    levelDisplay.textContent = state.level;
+                    statusText.textContent = 'Pattern matched!';
+
+                    disableTiles();
+
+                    setTimeout(() => {
+                        nextRound();
+                    }, 1000);
+                }
+            } else {
+                // Game Over
+                gameOver();
+            }
+        }
+
+        // Game Over
+        function gameOver() {
+            state.isPlaying = false;
+            playErrorSound();
+
+            statusText.textContent = 'Sync failure!';
+            statusText.classList.add('error');
+
+            // Flash all tiles red
+            tiles.forEach(tile => {
+                tile.style.filter = 'hue-rotate(180deg) brightness(0.5)';
+            });
+
+            setTimeout(() => {
+                tiles.forEach(tile => {
+                    tile.style.filter = '';
+                });
+
+                // Check high score
+                const score = state.level - 1;
+                if (score > state.highScore) {
+                    state.highScore = score;
+                    localStorage.setItem('neuralSyncHighScore', score);
+                    highScoreDisplay.textContent = state.highScore;
+                    highScoreMsg.classList.remove('hidden');
+                }
+
+                finalScore.textContent = score;
+                overlay.classList.add('active');
+            }, 1000);
+        }
+
+        // Enable/Disable tiles
+        function enableTiles() {
+            tiles.forEach(tile => tile.classList.remove('disabled'));
+        }
+
+        function disableTiles() {
+            tiles.forEach(tile => tile.classList.add('disabled'));
+        }
+
+        // Sleep utility
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Initialize game
+        init();
+    </script>
+</body>
+</html>
